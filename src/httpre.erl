@@ -64,16 +64,16 @@ connection_pid(SrcPort, Opts) ->
     end.
 
 new_connection(Opts) ->
-    DstIp = option("--dst_ip", Opts, ?DEFAULT_DEST_IP),
-    DstPort = option("--dst_port", Opts, ?DEFAULT_DEST_PORT),
-    DstPort2 = list_to_integer(DstPort),
+    Ip = option("--ip", Opts, ?DEFAULT_DEST_IP),
+    Port = option("--port", Opts, ?DEFAULT_DEST_PORT),
+    Port2 = list_to_integer(Port),
 
-    case gen_tcp:connect(DstIp, DstPort2, [binary, {packet, 0}]) of
+    case gen_tcp:connect(Ip, Port2, [binary, {packet, 0}]) of
         {ok, Socket} ->
             receive_http_payloads(#connection {
                 socket = Socket,
-                dst_ip = DstIp,
-                dst_port = DstPort2
+                ip = Ip,
+                port = Port2
             });
         {error, Reason} ->
             io:format("failed to open socket: ~p~n", [Reason])

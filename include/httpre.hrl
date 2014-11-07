@@ -8,14 +8,14 @@
 -define(DOCOPT_OPT,
 "Usage: httpre play [options] <pcap_file>
 
---dst_ip=<ip>      Destination ip.
---dst_port=<port>  Destination port."
+--ip=<ip>      Destination ip.
+--port=<port>  Destination port."
 ).
 
 -record(connection, {
     socket,
-    dst_ip,
-    dst_port,
+    ip,
+    port,
     buffer = <<>>,
     size = 0
 }).

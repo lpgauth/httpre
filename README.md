@@ -4,8 +4,8 @@
 
     Usage: httpre play [options] <pcap_file>
 
-    --dst_ip=<ip>      Destination ip.
-    --dst_port=<port>  Destination port.
+    --ip=<ip>      Destination ip.
+    --port=<port>  Destination port.
 
 #### pcap file
 
