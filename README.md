@@ -9,7 +9,7 @@
 
 #### pcap file
 
-    tcpdump -i eno1 -s 65535 dst net 38.74.193.133 -w bid_requests.pcap
+    tcpdump -i eno1 -s 65535 dst net 38.74.184.131 -w bid_requests.pcap
 
 #### system tuning
 
