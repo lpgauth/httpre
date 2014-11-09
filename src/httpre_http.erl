@@ -1,14 +1,13 @@
 -module(httpre_http).
 
 -export([
-    parse/1,
-    parse/2
+    parse_request/2
 ]).
 
 %% public
 -record(state, {
-    state = request,
-    buffer = <<>>,
+    state = request :: request | headers | body,
+    buffer = <<>>   :: binary(),
     method,
     uri,
     version,
@@ -16,15 +15,12 @@
     body
 }).
 
-parse(Buffer) ->
-    parse(Buffer, #state {}).
-
-parse(Buffer, undefined) ->
-    parse(Buffer, #state {});
-parse(Buffer, #state {state = request} = State) ->
+parse_request(Buffer, undefined) ->
+    parse_request(Buffer, #state {});
+parse_request(Buffer, #state {state = request} = State) ->
     case erlang:decode_packet(http_bin, Buffer, []) of
         {ok, {http_request, HttpMethod, HttpUri, HttpVersion}, NewBuffer} ->
-            parse(NewBuffer, State#state {
+            parse_request(NewBuffer, State#state {
                 state = headers,
                 buffer = NewBuffer,
                 method = HttpMethod,
@@ -36,7 +32,7 @@ parse(Buffer, #state {state = request} = State) ->
                 buffer = Buffer
             }}
     end;
-parse(Buffer, #state {
+parse_request(Buffer, #state {
         state = headers,
         headers = Headers
     } = State) ->
@@ -44,11 +40,11 @@ parse(Buffer, #state {
     case erlang:decode_packet(httph_bin, Buffer, []) of
         {ok, {http_header, _, Name, _, Value}, NewBuffer} ->
             BinName = httpre_utils:maybe_atom_to_binary(Name),
-            parse(NewBuffer, State#state{
+            parse_request(NewBuffer, State#state{
                 headers = [{BinName, Value} | Headers]
             });
         {ok, http_eoh, NewBuffer} ->
-            parse(NewBuffer, State#state {
+            parse_request(NewBuffer, State#state {
                 state = body
             });
         {more, _} ->
@@ -56,7 +52,7 @@ parse(Buffer, #state {
                 buffer = Buffer
             }}
     end;
-parse(Buffer, #state {
+parse_request(Buffer, #state {
         state = body,
         method = Method,
         uri = Uri,

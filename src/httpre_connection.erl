@@ -87,8 +87,8 @@ receive_loop(#state {
             });
         {tcp_payload, Payload} ->
             NewBuffer = <<Buffer/binary, Payload/binary>>,
-            case httpre_http:parse(Payload, ParserState) of
-                {ok, {Method, Uri, _Headers, _Body}, _} ->
+            case httpre_http:parse_request(Payload, ParserState) of
+                {ok, {_Method, _Uri, _Headers, _Body}, _} ->
                     case gen_tcp:send(Socket, NewBuffer) of
                         ok ->
                             receive_loop(State#state {
