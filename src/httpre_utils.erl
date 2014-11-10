@@ -6,10 +6,8 @@ lookup(Key, Proplist) ->
 
 lookup(Key, Proplist, Default) ->
     case lists:keyfind(Key, 1, Proplist) of
-        false ->
-            Default;
-        {_, Value} ->
-            Value
+        false -> Default;
+        {_, Value} -> Value
     end.
 
 maybe_atom_to_binary(Name) when is_atom(Name) ->
@@ -19,10 +17,7 @@ maybe_atom_to_binary(Name) when is_binary(Name) ->
 
 option(Key, Opts, Default) ->
     case lookup(Key, Opts) of
-        false ->
-            Default;
-        undefined ->
-            Default;
-        Value ->
-            Value
+        false -> Default;
+        undefined -> Default;
+        Value -> Value
     end.
