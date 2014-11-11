@@ -31,8 +31,8 @@ read_file(IODevice, Opts) ->
     case pcapfile:next(IODevice) of
         {ok, #pcap_record {payload = Payload}} ->
             case pkt:decapsulate(Payload) of
-                [#ether {}, #ipv4 {}, #tcp {sport = SrcPort}, TcpPayload] ->
-                    tcp_payload(TcpPayload, SrcPort, Opts);
+                [#ether {}, #ipv4 {saddr = SrcAddr}, #tcp {sport = SrcPort}, TcpPayload] ->
+                    tcp_payload(TcpPayload, {SrcAddr, SrcPort}, Opts);
                 _ ->
                     ok
             end,
@@ -45,6 +45,6 @@ tcp_payload(<<>>, _, _) ->
     ok;
 tcp_payload(<<0,0,0,0,0,0>>, _, _) ->
     ok;
-tcp_payload(TcpPayload, SrcPort, Opts) ->
-    Pid = httpre_connection:lookup(SrcPort, Opts),
+tcp_payload(TcpPayload, Key, Opts) ->
+    Pid = httpre_connection:lookup(Key, Opts),
     Pid ! {tcp_payload, TcpPayload}.

@@ -6,8 +6,8 @@
 
 %% public
 -record(state, {
-    state = request :: request | headers | body,
-    buffer = <<>>   :: binary(),
+    state   = request :: request | headers | body,
+    buffer  = <<>> :: binary(),
     method,
     uri,
     version,
@@ -15,14 +15,19 @@
     body
 }).
 
-parse_request(Buffer, undefined) ->
-    parse_request(Buffer, #state {});
-parse_request(Buffer, #state {state = request} = State) ->
-    case erlang:decode_packet(http_bin, Buffer, []) of
+parse_request(Bin, undefined) ->
+    parse_request(Bin, #state {});
+parse_request(Bin, #state {
+        state = request,
+        buffer = Buffer
+    } = State) ->
+
+    Bin2 = <<Buffer/binary, Bin/binary>>,
+    case erlang:decode_packet(http_bin, Bin2, []) of
         {ok, {http_request, HttpMethod, HttpUri, HttpVersion}, NewBuffer} ->
             parse_request(NewBuffer, State#state {
                 state = headers,
-                buffer = NewBuffer,
+                buffer = <<>>,
                 method = HttpMethod,
                 uri = HttpUri,
                 version = HttpVersion
@@ -32,41 +37,50 @@ parse_request(Buffer, #state {state = request} = State) ->
                 buffer = Buffer
             }}
     end;
-parse_request(Buffer, #state {
+parse_request(Bin, #state {
         state = headers,
+        buffer = Buffer,
         headers = Headers
     } = State) ->
 
-    case erlang:decode_packet(httph_bin, Buffer, []) of
+    Bin2 = <<Buffer/binary, Bin/binary>>,
+    case erlang:decode_packet(httph_bin, Bin2, []) of
         {ok, {http_header, _, Name, _, Value}, NewBuffer} ->
             BinName = httpre_utils:maybe_atom_to_binary(Name),
-            parse_request(NewBuffer, State#state{
+            parse_request(NewBuffer, State#state {
+                buffer = <<>>,
                 headers = [{BinName, Value} | Headers]
             });
         {ok, http_eoh, NewBuffer} ->
             parse_request(NewBuffer, State#state {
-                state = body
+                state = body,
+                buffer = <<>>
             });
         {more, _} ->
             {more, State#state {
                 buffer = Buffer
             }}
     end;
-parse_request(Buffer, #state {
+parse_request(Bin, #state {
         state = body,
+        buffer = Buffer,
         method = Method,
         uri = Uri,
         headers = Headers
     } = State) ->
 
-    ContentLengthBin = httpre_utils:lookup(<<"Content-Length">>, Headers, <<"0">>),
-    ContentLength = binary_to_integer(ContentLengthBin),
-
-    case byte_size(Buffer) == ContentLength of
-        true ->
-            {ok, {Method, Uri, Headers, Buffer}, State};
-        false ->
-            {more, State#state {
-                buffer = <<"">>
-            }}
+    Bin2 = <<Buffer/binary, Bin/binary>>,
+    case httpre_utils:lookup(<<"Content-Length">>, Headers) of
+        undefined ->
+            {ok, {Method, Uri, Headers, Bin2}};
+        ContentLengthBin ->
+            ContentLength = binary_to_integer(ContentLengthBin),
+            case byte_size(Bin2) == ContentLength of
+                true ->
+                    {ok, {Method, Uri, Headers, Bin2}};
+                false ->
+                    {more, State#state {
+                        buffer = Bin2
+                    }}
+            end
     end.

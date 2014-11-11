@@ -1,4 +1,4 @@
-### httprecap
+### httprecap (work in progress)
 
 #### usage
 
@@ -15,3 +15,10 @@
 
     ulimit -n 64000
     echo 1 > /proc/sys/net/ipv4/tcp_tw_reuse
+
+#### todo
+
+  - connection pool (--connections)
+  - verbose mode (--verbose)
+  - tests
+

@@ -48,8 +48,7 @@ new(Opts) ->
 
     receive_loop(#state {
         ip = Ip,
-        port = Port,
-        socket = connect(Ip, Port2)
+        port = Port2
     }).
 
 setup_table() ->
@@ -72,6 +71,7 @@ receive_loop(#state {
                 socket = Socket
             })
     end;
+% TODO: wait for reponse unless pipelined
 receive_loop(#state {
         socket = Socket,
         buffer = Buffer,
@@ -88,7 +88,7 @@ receive_loop(#state {
         {tcp_payload, Payload} ->
             NewBuffer = <<Buffer/binary, Payload/binary>>,
             case httpre_http:parse_request(Payload, ParserState) of
-                {ok, {_Method, _Uri, _Headers, _Body}, _} ->
+                {ok, {_Method, _Uri, _Headers, _Body}} ->
                     case gen_tcp:send(Socket, NewBuffer) of
                         ok ->
                             receive_loop(State#state {
@@ -96,6 +96,7 @@ receive_loop(#state {
                                 parser_state = undefined
                             });
                         {error, _} ->
+                            % TODO: empty buffer? retry?
                             receive_loop(State#state {
                                 socket = undefined,
                                 buffer = <<>>,
